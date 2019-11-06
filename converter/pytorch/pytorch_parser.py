@@ -51,6 +51,7 @@ class PytorchParser(Parser):
     'onnx::PRelu': 'PRelu',
     'onnx::BatchNormalization': 'BatchNormalization',
     'onnx::Relu': 'Relu',
+    'onnx::LeakyRelu': 'LeakyRelu',
     'onnx::MaxPool': 'MaxPool',
     'onnx::Add': 'Add',
     'onnx::AveragePool': 'AvgPool',
@@ -224,6 +225,12 @@ class PytorchParser(Parser):
 
         bias_name = '{0}.bias'.format(source_node.weights_name)
         weights_name = '{0}.weight'.format(source_node.weights_name)
+        
+        for key in list(self.state_dict.keys()):
+            if weights_name in key:
+                weights_name = key
+            if bias_name in key:
+                bias_name = key
 
         weight = self.state_dict[weights_name]
 
@@ -398,6 +405,13 @@ class PytorchParser(Parser):
         mean_name = '{0}.running_mean'.format(source_node.weights_name)
         var_name = '{0}.running_var'.format(source_node.weights_name)
 
+
+        for key in list(self.state_dict.keys()):
+            if mean_name in key:
+                mean_name = key
+            if var_name in key:
+                var_name = key
+
         mean = self.state_dict[mean_name].numpy()
         variance = self.state_dict[var_name].numpy()
 
@@ -415,6 +429,13 @@ class PytorchParser(Parser):
 
         bias_name = '{0}.bias'.format(source_node.weights_name)
         weights_name = '{0}.weight'.format(source_node.weights_name)
+
+
+        for key in list(self.state_dict.keys()):
+            if weights_name in key:
+                weights_name = key
+            if bias_name in key:
+                bias_name = key
 
         weight = self.state_dict[weights_name].numpy()
 
@@ -438,6 +459,20 @@ class PytorchParser(Parser):
     def rename_Relu(self, source_node):
         layer = pb2.LayerParameter()
         layer.type = "ReLU"
+
+        for b in source_node.in_edges:
+            layer.bottom.append(b)
+
+        layer.top.append(source_node.name)
+        layer.name = source_node.real_name
+
+        return layer
+
+    def rename_LeakyRelu(self, source_node):
+        attr = source_node.attrs
+        layer = pb2.LayerParameter()
+        layer.type = "ReLU"
+        layer.relu_param.negative_slope = float(attr['alpha'])
 
         for b in source_node.in_edges:
             layer.bottom.append(b)
@@ -743,7 +778,8 @@ class PytorchParser(Parser):
 
         assert attr['height_scale'] == attr['width_scale']
         factor = int(attr['height_scale'])
-        c = int(attr['channel'])
+        # c = int(attr['channel'])
+        c = 256
         k = 2 * factor - factor % 2
 
         layer.convolution_param.num_output = c

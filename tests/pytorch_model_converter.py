@@ -10,45 +10,39 @@ torch.set_printoptions(precision=10)
 import numpy as np
 from torchsummary import summary
 
-sys.path.append('/tool/caffe/python')
-sys.path.append('/tool/caffe/python/caffe')
+sys.path.append('/home/yaojin/work/caffe/python')
+sys.path.append('/home/yaojin/work/caffe/python/caffe')
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
 import caffe  # noqa
 from converter.pytorch.pytorch_parser import PytorchParser  # noqa
-from ssd import *
+from models import *
 
 model_file = "pytorch_model/best.pth"
 
 device = torch.device('cpu')  # PyTorch v0.4.0
 
-net = build_ssd('test', size=300, num_classes=21)
+img_size = 416
 
-model_weights = torch.load('pytorch_model/ssd_300_VOC.pth')
-
-net.load_state_dict(model_weights)
+net = Darknet('yolov3.cfg', img_size)
+print(net)
+print('load ready')
+input()
 
 torch.save(net, model_file)
 
-hook_result = []
-
-def hook(module, input, output):
-    hook_result.append(output)
-
 net.eval()
 
-# net.backbone.norm1.register_forward_hook(hook)
-
-dummy_input = torch.ones([1, 3, 300, 300])
+dummy_input = torch.ones([1, 3, 416, 416])
 
 net.to(device)
 output = net(dummy_input)
 
 # print(hook_result)
 
-summary(net, (3, 300, 300), device='cpu')
+# summary(net, (3, 416, 416), device='cpu')
 
-pytorch_parser = PytorchParser(model_file, [3, 300, 300])
+pytorch_parser = PytorchParser(model_file, [3, 416, 416])
 #
 pytorch_parser.run(model_file)
 
