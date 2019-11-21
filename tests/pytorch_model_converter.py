@@ -16,24 +16,25 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
 import caffe  # noqa
 from converter.pytorch.pytorch_parser import PytorchParser  # noqa
-from models import *
+import model
 
 model_file = "pytorch_model/best.pth"
 
 device = torch.device('cpu')  # PyTorch v0.4.0
 
-img_size = 416
+img_size = 608
 
-net = Darknet('yolov3.cfg', img_size)
+net = model.resnet18(num_classes=2, pretrained=False)
+net.eval()
+
 print(net)
+print(net.state_dict().keys())
 print('load ready')
 input()
 
 torch.save(net, model_file)
 
-net.eval()
-
-dummy_input = torch.ones([1, 3, 416, 416])
+dummy_input = torch.ones([1, 3, img_size, img_size])
 
 net.to(device)
 output = net(dummy_input)
@@ -42,7 +43,7 @@ output = net(dummy_input)
 
 # summary(net, (3, 416, 416), device='cpu')
 
-pytorch_parser = PytorchParser(model_file, [3, 416, 416])
+pytorch_parser = PytorchParser(model_file, [3, img_size, img_size])
 #
 pytorch_parser.run(model_file)
 
@@ -54,7 +55,7 @@ net = caffe.Classifier(Model_FILE, PRETRAINED)
 
 caffe.set_mode_cpu()
 
-img = np.ones((3, 300, 300))
+img = np.ones((3, img_size, img_size))
 
 input_data = net.blobs["data"].data[...]
 

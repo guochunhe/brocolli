@@ -63,6 +63,7 @@ class PytorchParser(Parser):
     'onnx::Constant': 'Constant',
     'onnx::Upsample': 'Upsample',
     'onnx::Concat': 'Concat',
+    'onnx::Reshape': 'Reshape',
     
 
     'aten::reshape': 'Reshape',
@@ -293,6 +294,7 @@ class PytorchParser(Parser):
 
     def rename_MaxPooling(self, source_node):
         attr = source_node.attrs
+        print(attr)
         kwargs = dict()
         layer = pb2.LayerParameter()
         layer.type = "Pooling"
@@ -542,8 +544,8 @@ class PytorchParser(Parser):
             kwargs['ceil_mode'] = 0
             if attr['pads'][0] == attr['pads'][1]:
                 if attr['strides'][0] > 1 and attr['pads'][0] > 0:
-                    # layer.pooling_param.pad = attr['pads'][0] - 1
-                    layer.pooling_param.pad = attr['pads'][0]
+                    layer.pooling_param.pad = attr['pads'][0] - 1
+                    # layer.pooling_param.pad = attr['pads'][0]
             else:
                 if attr['strides'][0] > 1 and attr['pads'][0] > 0:
                     layer.pooling_param.pad_h = attr['pads'][0] - 1
@@ -754,13 +756,13 @@ class PytorchParser(Parser):
         layer.norm_param.scale_filler.value = 20
         layer.norm_param.channel_shared = False
 
-        weights_name = '{0}.weight'.format(source_node.weights_name)
+        # weights_name = '{0}.weight'.format(source_node.weights_name)
 
-        weight = self.state_dict[weights_name]
+        # weight = self.state_dict[weights_name]
 
-        weight = weight.numpy()
+        # weight = weight.numpy()
 
-        layer.blobs.extend([as_blob(weight)])
+        # layer.blobs.extend([as_blob(weight)])
 
         for b in source_node.in_edges:
             layer.bottom.append(b)
