@@ -773,32 +773,13 @@ class PytorchParser(Parser):
 
     def rename_Upsample(self, source_node):
         attr = source_node.attrs
+        print(attr)
         layer = pb2.LayerParameter()
-        layer.type = "Deconvolution"
+        layer.type = "Upsample"
 
         assert attr['height_scale'] == attr['width_scale']
-        factor = int(attr['height_scale'])
-        # c = int(attr['channel'])
-        c = 256
-        k = 2 * factor - factor % 2
-
-        layer.convolution_param.num_output = c
-        layer.convolution_param.kernel_size.extend([k])
-        layer.convolution_param.stride.extend([factor])
-        layer.convolution_param.pad.extend([int(math.ceil((factor - 1) / 2.))])
-        layer.convolution_param.group = c
-        layer.convolution_param.weight_filler.type = 'bilinear'
-        layer.convolution_param.bias_term = False
-
-        learning_param = pb2.ParamSpec()
-        learning_param.lr_mult = 0
-        learning_param.decay_mult = 0
-        layer.param.extend([learning_param])
-
-        """ Init weight blob of filter kernel """
-        blobs_weight = FillBilinear(c, k)
-        layer.blobs.extend([as_blob(blobs_weight)])
         
+        # layer.upsample_param.scale = attr['width_scale'] 
         for b in source_node.in_edges:
             layer.bottom.append(b)
 
