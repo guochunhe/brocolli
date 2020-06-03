@@ -63,11 +63,13 @@ class PytorchParser(Parser):
     'onnx::Constant': 'Constant',
     'onnx::Upsample': 'Upsample',
     'onnx::Concat': 'Concat',
-    
+    'onnx::Slice': 'Slice',
+    'onnx::Reshape': 'Reshape',
 
-    'aten::reshape': 'Reshape',
+    'aten::reshape': 'AtenReshape',
     'aten::max_pool2d': 'MaxPooling',
-    'aten::adaptive_avg_pool2d': 'AvgPooling'
+    'aten::adaptive_avg_pool2d': 'AvgPooling',
+    'aten::softmax': 'AtenSoftmax'
 
     # TODO
 }
@@ -754,13 +756,13 @@ class PytorchParser(Parser):
         layer.norm_param.scale_filler.value = 20
         layer.norm_param.channel_shared = False
 
-        weights_name = '{0}.weight'.format(source_node.weights_name)
+        # weights_name = '{0}.weight'.format(source_node.weights_name)
 
-        weight = self.state_dict[weights_name]
+        # weight = self.state_dict[weights_name]
 
-        weight = weight.numpy()
+        # weight = weight.numpy()
 
-        layer.blobs.extend([as_blob(weight)])
+        # layer.blobs.extend([as_blob(weight)])
 
         for b in source_node.in_edges:
             layer.bottom.append(b)
@@ -808,9 +810,55 @@ class PytorchParser(Parser):
         print(attr)
         layer.type = "Reshape"
 
+        # for each in attr['shape']:
+        #     layer.reshape_param.shape.dim.extend([each])
+            # print(each)
+
+        for b in source_node.in_edges:
+            layer.bottom.append(b)
+
+        layer.top.append(source_node.name)
+
+        layer.name = source_node.real_name
+        return layer
+
+    def rename_AtenReshape(self, source_node):
+        attr = source_node.attrs
+        layer = pb2.LayerParameter()
+        print(attr)
+        layer.type = "Reshape"
+
         for each in attr['shape']:
             layer.reshape_param.shape.dim.extend([each])
             # print(each)
+
+        for b in source_node.in_edges:
+            layer.bottom.append(b)
+
+        layer.top.append(source_node.name)
+
+        layer.name = source_node.real_name
+        return layer
+
+    def rename_Slice(self, source_node):
+        attr = source_node.attrs
+        layer = pb2.LayerParameter()
+        layer.type = "Slice"
+
+        layer.slice_param.axis = attr['axes'][0]
+        # layer.slice_param.slice_point.extend(pytorch_layer.slice_point)
+        
+        for b in source_node.in_edges:
+            layer.bottom.append(b)
+
+        layer.top.append(source_node.name)
+
+        layer.name = source_node.real_name
+        return layer
+
+    def rename_AtenSoftmax(self, source_node):
+        layer = pb2.LayerParameter()
+        layer.type = 'Softmax'
 
         for b in source_node.in_edges:
             layer.bottom.append(b)

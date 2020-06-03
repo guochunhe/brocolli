@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
 import caffe  # noqa
 from converter.pytorch.pytorch_parser import PytorchParser  # noqa
-from models import *
+from model import SCNN
 
 model_file = "pytorch_model/best.pth"
 
@@ -24,7 +24,8 @@ device = torch.device('cpu')  # PyTorch v0.4.0
 
 img_size = 416
 
-net = Darknet('yolov3.cfg', img_size)
+# net = Darknet('yolov3.cfg', img_size)
+net = SCNN(input_size=(800, 288), pretrained=False)
 print(net)
 print('load ready')
 input()
@@ -33,7 +34,7 @@ torch.save(net, model_file)
 
 net.eval()
 
-dummy_input = torch.ones([1, 3, 416, 416])
+dummy_input = torch.ones([1, 3, 800, 288])
 
 net.to(device)
 output = net(dummy_input)
@@ -42,7 +43,7 @@ output = net(dummy_input)
 
 # summary(net, (3, 416, 416), device='cpu')
 
-pytorch_parser = PytorchParser(model_file, [3, 416, 416])
+pytorch_parser = PytorchParser(model_file, [3, 800, 288])
 #
 pytorch_parser.run(model_file)
 
